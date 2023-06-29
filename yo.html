@@ -1,0 +1,105 @@
+<html>
+<head>
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/core"></script>
+<script>
+// Cargar el módulo ffmpeg
+const { createFFmpeg, fetchFile } = FFmpeg;
+const ffmpeg = createFFmpeg({ log: true });
+
+// Función para descargar el video de YouTube
+async function downloadVideo(url) {
+  // Comprobar si el url es válido
+  if (!url || !url.startsWith("https://www.youtube.com/watch?v=")) {
+    alert("Por favor, introduce una url válida de YouTube");
+    return;
+  }
+  // Extraer el id del video
+  const videoId = url.split("=")[1];
+  // Crear un elemento de video oculto
+  const video = document.createElement("video");
+  video.style.display = "none";
+  document.body.appendChild(video);
+  // Cargar el video de YouTube usando la API de iframe
+  const player = new YT.Player(video, {
+    height: \'360\',
+    width: \'640\',
+    videoId: videoId,
+    events: {
+      \'onReady\': onPlayerReady,
+      \'onError\': onPlayerError
+    }
+  });
+  // Función que se ejecuta cuando el reproductor está listo
+  async function onPlayerReady(event) {
+    // Obtener la duración del video en segundos
+    const duration = player.getDuration();
+    // Crear un canvas para capturar los fotogramas del video
+    const canvas = document.createElement("canvas");
+    canvas.width = 640;
+    canvas.height = 360;
+    const ctx = canvas.getContext("2d");
+    // Crear un array para almacenar los fotogramas en formato blob
+    const frames = [];
+    // Crear una variable para controlar el tiempo actual del video
+    let currentTime = 0;
+    // Crear una variable para mostrar el progreso de la captura
+    const progress = document.getElementById("progress");
+    // Capturar los fotogramas del video cada segundo y guardarlos en el array
+    while (currentTime < duration) {
+      // Establecer el tiempo actual del video
+      player.seekTo(currentTime);
+      // Dibujar el fotograma actual en el canvas
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      // Convertir el canvas en un blob y añadirlo al array
+      const blob = await new Promise(resolve => canvas.toBlob(resolve));
+      frames.push(blob);
+      // Actualizar el progreso
+      progress.textContent = `Capturando fotogramas: ${Math.round(currentTime / duration * 100)}%`;
+      // Incrementar el tiempo actual en un segundo
+      currentTime++;
+    }
+    // Eliminar el elemento de video y el canvas
+    document.body.removeChild(video);
+    document.body.removeChild(canvas);
+    // Convertir los fotogramas en un archivo de video mp4 usando ffmpeg
+    progress.textContent = "Convirtiendo fotogramas a mp4";
+    // Cargar ffmpeg
+    await ffmpeg.load();
+    // Escribir los fotogramas en la memoria de ffmpeg
+    for (let i = 0; i < frames.length; i++) {
+      ffmpeg.FS("writeFile", `frame${i}.jpg`, await fetchFile(frames[i]));
+    }
+    // Ejecutar el comando de ffmpeg para crear el archivo mp4
+    await ffmpeg.run("-f", "image2", "-framerate", "1", "-i", "frame%d.jpg", "-c:v", "libx264", "-pix_fmt", "yuv420p", "output.mp4");
+    // Leer el archivo mp4 de la memoria de ffmpeg
+    const data = ffmpeg.FS("readFile", "output.mp4");
+    // Convertir el archivo mp4 en un blob
+    const mp4Blob = new Blob([data.buffer], { type: "video/mp4" });
+    // Crear una url para el blob
+    const mp4Url = URL.createObjectURL(mp4Blob);
+    // Crear un elemento de enlace para descargar el archivo mp4
+    const link = document.createElement("a");
+    link.href = mp4Url;
+    link.download = `${videoId}.mp4`;
+    link.textContent = "Descargar mp4";
+    document.body.appendChild(link);
+    // Actualizar el progreso
+    progress.textContent = "Listo";
+  }
+  // Función que se ejecuta cuando hay un error en el reproductor
+  function onPlayerError(event) {
+   alert("Ha ocurrido un error al cargar el video de YouTube");
+  }
+}
+</script>
+</head>
+<body>
+<h1>Descargar video de YouTube en formato mp4</h1>
+<p>Introduce la url del video de YouTube que quieres descargar:</p>
+<input type="text" id="url" placeholder="https://www.youtube.com/watch?v=...">
+<button onclick="downloadVideo(document.getElementById(\'url\').value)">Descargar</button>
+<p id="progress"></p>
+<script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
