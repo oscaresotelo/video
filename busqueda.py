@@ -23,8 +23,10 @@ if bt_buscar:
     matches = re.findall(r'=(.*?)>', results_text) # Buscar texto entre "=" y ">"
     for match in matches:
         video_link = "https://www.youtube.com/watch?v=" + match.strip() # Agregar cadena al texto extraído
-        st.video(video_link) # Mostrar el enlace del video
+
+        # st.video(video_link) # Mostrar el enlace del video
         video = YouTube(video_link)
+        st.image(video.thumbnail_url)
         video_title = video.title # Obtener el título del video
         st.info("Título: " + video_title) # Mostrar el título del video
         video_stream = video.streams.get_by_itag(22) # Obtener la corriente de video con calidad MP4 y resolución 720p
