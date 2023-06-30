@@ -14,7 +14,7 @@ hide_st_style = """
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 # Configurar título y descripción de la aplicación
-st.markdown('<h1 class="title">Descargador de videos de YouTube</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="title">PABLITO DJ..</h1>', unsafe_allow_html=True)
 st.markdown('<p class="subtitle">¡Bienvenido! Con esta aplicación puedes descargar videos de YouTube. Simplemente ingresa el enlace del video y selecciona la calidad de descarga.</p>', unsafe_allow_html=True)
 show_pages([
         Page("vervideo.py", "Inicio"),
